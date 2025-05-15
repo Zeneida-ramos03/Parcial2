@@ -1,0 +1,306 @@
+// Zeneida Ramos -22300082//
+
+#include <iostream>
+#include <malloc.h>
+#include <string.h>
+#include <vector>
+#include <algorithm>
+
+using namespace std;
+
+struct nodo {
+    char nombre[30];
+    int anio;
+    int genero;
+    double dinero;
+    struct nodo *izq;
+    struct nodo *der;
+};
+
+struct PeliculaEliminada {
+    char nombre[30];
+    int anio;
+    int genero;
+    double dinero;
+};
+
+struct nodo *raiz = NULL, *aux = NULL, *aux2 = NULL;
+vector<PeliculaEliminada> eliminados;
+
+int posicionar() {
+    if (aux->anio <= aux2->anio) {
+        if (aux2->izq != NULL) {
+            aux2 = aux2->izq;
+            posicionar();
+        } else
+            aux2->izq = aux;
+    } else if (aux->anio > aux2->anio) {
+        if (aux2->der != NULL) {
+            aux2 = aux2->der;
+            posicionar();
+        } else
+            aux2->der = aux;
+    }
+    return 0;
+}
+
+int addNodo() {
+    aux = (struct nodo *)malloc(sizeof(struct nodo));
+    cout << "Nombre de la pelicula: " <<endl;
+    cin >> aux->nombre;
+    cout << "Anio de realizacion: " <<endl;
+    cin >> aux->anio;
+    cout << "Genero: \n 1. Accion \n 2. Drama  \n 3.Comedia" << endl;
+    cin >> aux->genero;
+    cout << "Dinero recaudado en millones de dolares: " <<endl;
+    cin >> aux->dinero;
+
+    aux->izq = aux->der = NULL;
+    if (raiz == NULL) {
+        raiz = aux;
+    } else {
+        aux2 = raiz;
+        posicionar();
+    }
+    return 0;
+}
+
+const char *obtenerGeneroTexto(int genero) {
+    switch (genero) {
+        case 1: return "Accion";
+        case 2: return "Drama";
+        case 3: return "Comedia";
+        default: return "Desconocido";
+    }
+}
+
+int mostrarP(struct nodo *aux3) {
+    cout << "--------------------- " << endl;
+    cout << "Nombre: " << aux3->nombre << endl;
+    cout << "Anio: " << aux3->anio << endl;
+    cout << "Genero: " << obtenerGeneroTexto(aux3->genero) << endl;
+    cout << "Dinero Recaudado: " << aux3->dinero << " millones de dolares " << endl;
+    return 0;
+}
+
+int inorden(struct nodo *aux3) {
+    if (aux3 == NULL) return 0;
+    inorden(aux3->izq);
+    mostrarP(aux3);
+    inorden(aux3->der);
+    return 0;
+}
+
+int preorden(struct nodo *aux3) {
+    if (aux3 == NULL) return 0;
+    mostrarP(aux3);
+    preorden(aux3->izq);
+    preorden(aux3->der);
+    return 0;
+}
+
+int postorden(struct nodo *aux3) {
+    if (aux3 == NULL) return 0;
+    postorden(aux3->izq);
+    postorden(aux3->der);
+    mostrarP(aux3);
+    return 0;
+}
+
+int ubicar(nodo *aux3, const char *aguja) {
+    if (aux3 == NULL) return 0;
+    if (strcmp(aux3->nombre, aguja) == 0) {
+        aux = aux3;
+        return 1;
+    }
+    return ubicar(aux3->izq, aguja) || ubicar(aux3->der, aguja);
+}
+
+int buscarPelicula() {
+    char buscar[50];
+    cout << "Buscar una pelicula por su nombre: ";
+    cin >> buscar;
+    if (ubicar(raiz, buscar)) {
+        mostrarP(aux);
+    } else {
+        cout << "No hay pelicula con ese nombre: " << buscar << endl;
+    }
+    return 0;
+}
+
+int ubicarG(nodo *aux3, int gener) {
+    if (aux3 == NULL) return 0;
+    if (aux3->genero == gener) {
+        mostrarP(aux3);
+    }
+    ubicarG(aux3->izq, gener);
+    ubicarG(aux3->der, gener);
+    return 0;
+}
+
+int mostrarxG(struct nodo *raiz) {
+    int buscar;
+    cout << "Buscar pelicula por Genero: \n1. Accion \n2. Drama \n3.Comedia " << endl;
+    cin >> buscar;
+
+    if (buscar < 1 || buscar > 3) {
+        cout << "ERROR: GENERO NO VALIDO" << endl;
+        return 0;
+    }
+
+    cout << "\n======== " << obtenerGeneroTexto(buscar) << " ========\n";
+    ubicarG(raiz, buscar);
+    return 0;
+}
+
+void recolectarPeliculas(nodo *raiz, vector<nodo *> &peliculas) {
+    if (!raiz) return;
+    recolectarPeliculas(raiz->izq, peliculas);
+    peliculas.push_back(raiz);
+    recolectarPeliculas(raiz->der, peliculas);
+}
+
+bool compararPorDineroMenor(nodo *a, nodo *b) {
+    return a->dinero < b->dinero;
+}
+
+void mostrarFracasosTaquilleros(nodo *raiz) {
+    vector<nodo *> peliculas;
+    recolectarPeliculas(raiz, peliculas);
+    sort(peliculas.begin(), peliculas.end(), compararPorDineroMenor);
+
+    cout << "\n=== Los 3 fracasos taquilleros ===\n";
+    int total = min(3, static_cast<int>(peliculas.size()));
+
+    if (total == 0) {
+        cout << "No hay películas registradas.\n";
+    } else {
+        for (int i = 0; i < total; ++i) {
+            cout << i + 1 << ". " << peliculas[i]->nombre
+                 << " ($" << peliculas[i]->dinero << " millones)\n";
+        }
+    }
+}
+
+nodo* eliminarNodo(nodo* raiz, const char* nombre) {
+    if (raiz == NULL) return NULL;
+
+    if (strcmp(nombre, raiz->nombre) < 0) {
+        raiz->izq = eliminarNodo(raiz->izq, nombre);
+    } else if (strcmp(nombre, raiz->nombre) > 0) {
+        raiz->der = eliminarNodo(raiz->der, nombre);
+    } else {
+        
+        PeliculaEliminada p;
+        strcpy(p.nombre, raiz->nombre);
+        p.anio = raiz->anio;
+        p.genero = raiz->genero;
+        p.dinero = raiz->dinero;
+        eliminados.push_back(p);
+
+        if (raiz->izq == NULL) {
+            nodo* temp = raiz->der;
+            free(raiz);
+            return temp;
+        } else if (raiz->der == NULL) {
+            nodo* temp = raiz->izq;
+            free(raiz);
+            return temp;
+        }
+
+        nodo* sucesor = raiz->der;
+        while (sucesor->izq != NULL)
+            sucesor = sucesor->izq;
+
+        strcpy(raiz->nombre, sucesor->nombre);
+        raiz->anio = sucesor->anio;
+        raiz->genero = sucesor->genero;
+        raiz->dinero = sucesor->dinero;
+
+        raiz->der = eliminarNodo(raiz->der, sucesor->nombre);
+    }
+    return raiz;
+}
+
+void eliminarPelicula() {
+    char nombre[30];
+    cout << "Ingrese el nombre de la pelicula a eliminar: ";
+    cin >> nombre;
+
+    if (!ubicar(raiz, nombre)) {
+        cout << "Pelicula no encontrada.\n";
+        return;
+    }
+
+    raiz = eliminarNodo(raiz, nombre);
+    cout << "Pelicula eliminada correctamente.\n";
+}
+
+void verPeliculasEliminadas() {
+    if (eliminados.empty()) {
+        cout << "No hay películas eliminadas aún.\n";
+        return;
+    }
+
+    cout << "\n=== Películas Eliminadas ===\n";
+    for (size_t i = 0; i < eliminados.size(); ++i) {
+        cout << "---------------------\n";
+        cout << "Nombre: " << eliminados[i].nombre << endl;
+        cout << "Año: " << eliminados[i].anio << endl;
+        cout << "Género: " << obtenerGeneroTexto(eliminados[i].genero) << endl;
+        cout << "Dinero Recaudado: " << eliminados[i].dinero << " millones de dólares\n";
+    }
+}
+
+int main() {
+    int opc, opc2;
+
+    do {
+        cout << "\n======== MENU Pelicula ========\n";
+        cout << "1. Registrar pelicula\n";
+        cout << "2. Recorrido Arbol\n";
+        cout << "3. Buscar pelicula\n";
+        cout << "4. Mostrar x Genero\n";
+        cout << "5. Fracasos\n";
+        cout << "6. Eliminar pelicula\n";
+        cout << "7. Ver eliminadas\n";
+        cout << "8. Salir\n";
+        cout << "Seleccione una opcion: ";
+        cin >> opc;
+
+        switch (opc) {
+            case 1: addNodo(); break;
+            case 2:
+                cout << "\n1. INORDEN\n2. PREORDEN\n3. POSTORDEN\nOpcion: ";
+                cin >> opc2;
+                if (opc2 == 1) inorden(raiz);
+                else if (opc2 == 2) preorden(raiz);
+                else if (opc2 == 3) postorden(raiz);
+                else cout << "Opcion invalida\n";
+                break;
+            case 3: 
+                buscarPelicula(); 
+                break;
+            case 4: 
+                mostrarxG(raiz);
+                break;
+            case 5: 
+                mostrarFracasosTaquilleros(raiz); 
+                break;
+            case 6: 
+                eliminarPelicula(); 
+                break;
+            case 7: 
+                verPeliculasEliminadas();
+                break;
+            case 8: 
+                cout << "Adios!\n"; 
+                break;
+            default: cout << "Opcion no valida.\n";
+                break;
+        }
+
+    } while (opc != 8);
+
+    return 0;
+}
